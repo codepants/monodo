@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ODOBASIC ver 0.1</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+  <style>
+    .chunk-row { transition: background 0.2s, border 0.2s; }
+    /* .chunk-row.selected { background: #f0fff4; }
+    .chunk-row.unselected { background: #fff0f0; } */
+    .move-btn { min-width: 2.5em; }
+    .chunk-row.latest-row {
+      border: 2px solid #00bfff !important;
+      box-shadow: 0 0 2px #00bfff;
+    }
+    
+  </style>
+</head>
+<body class="section">
+  <div class="container" x-data="chunkApp()" x-init="init()">
+    <nav class="level mb-4">
+      <div class="level-left">
+       
+        <div class="level-item">
+          <h1 class="title mb-0 ml-2">ODOBASIC ver 0.1</h1>
+        </div>
+      </div>
+      <div class="level-right">
+        <div class="level-item">
+          <span class="mr-2 has-text-grey" x-text="displayName"></span>
+        </div>
+        <div class="level-item">
+          <span class="mr-2 has-text-grey-light" x-text="displayEmail"></span>
+        </div>
+        <div class="level-item" x-show="!user">
+          <button class="button is-light" @click="signInWithGoogle">
+            Sign in with Google
+          </button>
+        </div>
+        <div class="level-item" x-show="user" style="display: flex; align-items: center;">
+          <!-- <span class="mr-2 has-text-grey-light" x-text="user.email"></span> -->
+          <button class="button is-small is-danger" @click="signOut">Logout</button>
+        </div>
+      </div>
+    </nav>
+    <div class="box">
+      <form @submit.prevent="addChunk">
+        <div class="field has-addons">
+          <div class="control is-expanded">
+            <input class="input" type="text" placeholder="Enter chunk content..." x-model="newChunkContent">
+          </div>
+          <div class="control">
+            <button class="button is-primary" type="submit" :disabled="!newChunkContent.trim()">Submit</button>
+          </div>
+          <div class="control">
+            <button class="button is-light" type="button" @click="newChunkContent = ''">Clear</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="box">
+      <table class="table is-fullwidth is-striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Content</th>
+            <th>Select</th>
+            <th>Order</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(chunk, idx) in chunks" :key="chunk.chunk_id">
+            <tr :class="{'chunk-row': true, 'selected': chunk.chunk_select, 'unselected': !chunk.chunk_select, 'latest-row': chunk.chunk_id === latestRowId}">
+              <td x-text="chunk.chunk_index"></td>
+              <td style="max-width: 400px; word-break: break-all;" x-text="chunk.chunk_content"></td>
+              <td>
+                <input type="checkbox" :checked="chunk.chunk_select" @change="toggleSelect(chunk)">
+              </td>
+              <td>
+                <div class="buttons has-addons">
+                  <button class="button is-small move-btn" :disabled="idx === 0" @click="moveChunk(idx, -1)">&#8593;</button>
+                  <button class="button is-small move-btn" :disabled="idx === chunks.length - 1" @click="moveChunk(idx, 1)">&#8595;</button>
+                </div>
+              </td>
+              <td>
+                <button class="button is-danger is-small" @click="deleteChunk(chunk)">Delete</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div x-show="chunks.length === 0" class="has-text-grey">No chunks yet.</div>
+    </div>
+  </div>
+  <script>
+    function chunkApp() {
+      return {
+        supabaseUrl: 'https://tqsbgpafbdgeikbjksrd.supabase.co',
+        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxc2JncGFmYmRnZWlrYmprc3JkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQxMDY4MzYsImV4cCI6MjA0OTY4MjgzNn0.b65CCd0f9JvWIdAWcs-TWfYubzY964uIQcpWHwpa9Lg',
+        supabase: null,
+        chunks: [],
+        newChunkContent: '',
+        user: null,
+        _initialized: false,
+        latestRowId: null,
+        async init() {
+          console.log('init entered')
+          if (this._initialized) return;
+          this._initialized = true;
+          this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+          // Check for existing session
+          const { data: { session } } = await this.supabase.auth.getSession();
+          if (session && session.user) {
+            this.user = session.user;
+            await this.fetchChunks();
+          }
+          // Listen for login events
+          this.supabase.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+              this.user = session.user;
+              this.fetchChunks();
+            } else {
+              this.user = null;
+            }
+          });
+        },
+        async signInWithGoogle() {
+          await this.supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: window.location.origin + '/blot'
+            }
+          });
+        },
+        async signOut() {
+          await this.supabase.auth.signOut();
+          this.user = null;
+        },
+        async fetchChunks() {
+          if (!this.supabase) return;
+          let { data, error } = await this.supabase
+            .from('chunk')
+            .select('*')
+            .order('chunk_index', { ascending: true });
+          if (!error) {
+            this.chunks = data;
+          }
+        },
+        async addChunk() {
+          if (!this.supabase || !this.newChunkContent.trim()) return;
+          let maxIndex = this.chunks.length ? Math.max(...this.chunks.map(c => c.chunk_index)) : 0;
+          let { data, error } = await this.supabase
+            .from('chunk')
+            .insert({
+              chunk_content: this.newChunkContent,
+              chunk_select: true,
+              chunk_index: maxIndex + 1
+            })
+            .select();
+          if (error) {
+            alert('Error inserting chunk: ' + (error.message || JSON.stringify(error)));
+            return;
+          }
+          if (data && data.length) {
+            this.chunks.push(data[0]);
+            this.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
+            this.newChunkContent = '';
+            this.latestRowId = data[0].chunk_id;
+          }
+        },
+        async deleteChunk(chunk) {
+          if (!this.supabase) return;
+          await this.supabase.from('chunk').delete().eq('chunk_id', chunk.chunk_id);
+          this.chunks = this.chunks.filter(c => c.chunk_id !== chunk.chunk_id);
+          await this.reindexChunks();
+        },
+        async moveChunk(idx, dir) {
+          let newIdx = idx + dir;
+          if (newIdx < 0 || newIdx >= this.chunks.length) return;
+          let a = this.chunks[idx];
+          let b = this.chunks[newIdx];
+          let temp = a.chunk_index;
+          a.chunk_index = b.chunk_index;
+          b.chunk_index = temp;
+          await this.supabase.from('chunk').update({ chunk_index: a.chunk_index }).eq('chunk_id', a.chunk_id);
+          await this.supabase.from('chunk').update({ chunk_index: b.chunk_index }).eq('chunk_id', b.chunk_id);
+          this.chunks.sort((x, y) => x.chunk_index - y.chunk_index);
+          this.latestRowId = a.chunk_id;
+        },
+        async toggleSelect(chunk) {
+          chunk.chunk_select = !chunk.chunk_select;
+          await this.supabase.from('chunk').update({ chunk_select: chunk.chunk_select }).eq('chunk_id', chunk.chunk_id);
+        },
+        async reindexChunks() {
+          for (let i = 0; i < this.chunks.length; i++) {
+            let c = this.chunks[i];
+            if (c.chunk_index !== i + 1) {
+              c.chunk_index = i + 1;
+              await this.supabase.from('chunk').update({ chunk_index: c.chunk_index }).eq('chunk_id', c.chunk_id);
+            }
+          }
+          this.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
+        },
+        get displayName() {
+          if (!this.user) return 'guest';
+          if (this.user.user_metadata && this.user.user_metadata.full_name) return this.user.user_metadata.full_name;
+          if (this.user.email) return this.user.email;
+          return 'guest';
+        },
+        get displayEmail() {
+          if (!this.user) return 'guest';
+          if (this.user.email) return this.user.email;
+          return 'guest';
+        }
+      }
+    }
+  </script>
+</body>
+</html> 
