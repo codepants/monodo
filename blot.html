@@ -122,7 +122,7 @@
                   </div>
                 </td>
                 <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">
-                  <button class="button is-danger is-small" style="padding:0 0.5em;" @click="deleteChunk(chunk)">x</button>
+                  <button class="button is-danger is-small" style="padding:0 0.5em;" @click="deleteChunk(chunk)">delete</button>
                 </td>
               </tr>
             </template>
@@ -145,9 +145,28 @@
         </table>
         <div x-show="chunks.length === 0" class="has-text-grey">No chunks yet.</div>
       </div>
-      <div style="flex: 1; min-width: 200px; background: #fffbe6; border-radius: 8px; padding: 2vw; box-shadow: 0 2px 8px #ffe06633;">
-        <h2 class="title is-5">OMP generated</h2>
-        <pre id="omp_output" x-text="ompOutput"></pre>
+      <div style="flex: 1; min-width: 200px; border-radius: 8px; padding: 2vw; box-shadow: 0 2px 8px #ffe06633;">
+        <h2 class="title is-5">output generated: </h2>
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 1em; margin-bottom: 0.5em;">
+          <div id="status" x-text="projectStatus"></div>
+          <div>
+            <span class="has-text-grey">last action: </span>
+            <span x-text="formatActionTime(projectActionTime)" style="font-size: 60%"></span>
+          </div>
+        </div>
+        <div style="width: 25vw; min-width: 200px; display: flex; flex-direction: column; gap: 1.5em;">
+          <div>
+            <h3 class="subtitle is-6">obas text:</h3>
+            <pre id="obas_text" x-text="obasText" style="width: 25vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em;"></pre>
+            <div style="margin-top: 1em; text-align: right;">
+              <button class="button is-warning" @click="submitObas()">Submit obas</button>
+            </div>
+          </div>
+          <div>
+            <h3 class="subtitle is-6">omp output:</h3>
+            <pre id="omp_output" x-text="ompOutput" style="width: 25vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto;"></pre>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -167,6 +186,10 @@
         ompOutput: '',
         insertingNew: false,
         _insertingRowLock: false,
+        projectStatus: '',
+        projectObas: '',
+        projectActionTime: '',
+        obasText: '',
         async init() {
           console.log('init entered')
           if (this._initialized) return;
@@ -176,17 +199,21 @@
           const { data: { session } } = await this.supabase.auth.getSession();
           if (session && session.user) {
             this.user = session.user;
+            await this.fetchProjectForUser();
             await this.fetchChunks();
           }
           // Listen for login events
-          this.supabase.auth.onAuthStateChange((event, session) => {
+          this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (session && session.user) {
               this.user = session.user;
+              await this.fetchProjectForUser();
               this.fetchChunks();
             } else {
               this.user = null;
             }
           });
+          // Poll every 10 seconds to refresh project info
+          setInterval(() => { this.fetchProjectForUser(); }, 10000);
         },
         async signInWithGoogle() {
           await this.supabase.auth.signInWithOAuth({
@@ -208,7 +235,32 @@
             .order('chunk_index', { ascending: true });
           if (!error) {
             this.chunks = data;
-            this.updateOmpOutput();
+            this.updateObas();
+          }
+        },
+        async fetchProjectForUser() {console.log("server ping")
+          if (!this.user || !this.user.email) {
+            this.projectStatus = '';
+            this.ompOutput = '';
+            this.projectObas = '';
+            this.projectActionTime = '';
+            return;
+          }
+          let { data, error } = await this.supabase
+            .from('project')
+            .select('status, omp, obas, action_time')
+            .eq('owner', this.user.email)
+            .single();
+          if (!error && data) {
+            this.projectStatus = data.status || '';
+            this.ompOutput = data.omp || '';
+            this.projectObas = data.obas || '';
+            this.projectActionTime = data.action_time || null;
+          } else {
+            this.projectStatus = 'No project found for this user.';
+            this.ompOutput = '';
+            this.projectObas = '';
+            this.projectActionTime = '';
           }
         },
         async addChunk() {
@@ -219,7 +271,8 @@
             .insert({
               chunk_content: this.newChunkContent,
               chunk_select: true,
-              chunk_index: maxIndex + 1
+              chunk_index: maxIndex + 1,
+              chunk_owner: this.user && this.user.email ? this.user.email : null
             })
             .select();
           if (error) {
@@ -231,7 +284,7 @@
             this.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
             this.newChunkContent = '';
             this.latestRowId = data[0].chunk_id;
-            this.updateOmpOutput();
+            this.updateObas();
           }
         },
         async deleteChunk(chunk) {
@@ -239,7 +292,7 @@
           await this.supabase.from('chunk').delete().eq('chunk_id', chunk.chunk_id);
           this.chunks = this.chunks.filter(c => c.chunk_id !== chunk.chunk_id);
           await this.reindexChunks();
-          this.updateOmpOutput();
+          this.updateObas();
         },
         async moveChunk(idx, dir) {
           let newIdx = idx + dir;
@@ -253,7 +306,7 @@
           await this.supabase.from('chunk').update({ chunk_index: b.chunk_index }).eq('chunk_id', b.chunk_id);
           this.chunks.sort((x, y) => x.chunk_index - y.chunk_index);
           this.latestRowId = a.chunk_id;
-          this.updateOmpOutput();
+          this.updateObas();
         },
         async toggleSelect(chunk) {
           chunk.chunk_select = !chunk.chunk_select;
@@ -268,17 +321,24 @@
             }
           }
           this.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
-          this.updateOmpOutput();
+          this.updateObas();
         },
-        updateOmpOutput() {
+        updateObas: async function() {
           // Concatenate chunk_content in chunk_index order
           if (!this.chunks || !this.chunks.length) {
+            this.obasText = '';
             this.ompOutput = '';
+            
             return;
           }
           // Sort to be sure
           const sorted = [...this.chunks].sort((a, b) => a.chunk_index - b.chunk_index);
-          this.ompOutput = sorted.map(c => c.chunk_content).join('\n');
+          this.obasText = sorted.map(c => c.chunk_content).join('\n');
+          // this.ompOutput = this.obasText;
+          // // Update project.obas in Supabase
+          // if (this.user && this.user.email) {
+          //   await this.supabase.from('project').update({ status: "pending", obas: this.obasText }).eq('owner', this.user.email);
+          // }
         },
         get displayName() {
           if (!this.user) return 'guest';
@@ -304,7 +364,7 @@
           if (chunk.chunk_content !== newContent) {
             chunk.chunk_content = newContent;
             await this.supabase.from('chunk').update({ chunk_content: newContent }).eq('chunk_id', chunk.chunk_id);
-            this.updateOmpOutput();
+            this.updateObas();
           }
           this.editingChunkId = null;
         },
@@ -332,14 +392,15 @@
               .insert({
                 chunk_content: value,
                 chunk_select: true,
-                chunk_index: maxIndex + 1
+                chunk_index: maxIndex + 1,
+                chunk_owner: this.user && this.user.email ? this.user.email : null
               })
               .select();
             if (!error && data && data.length) {
               this.chunks.push(data[0]);
               this.chunks.sort((a, b) => a.chunk_index - b.chunk_index);
               this.latestRowId = data[0].chunk_id;
-              this.updateOmpOutput();
+              this.updateObas();
             }
             this._insertingRowLock = false;
           }
@@ -347,6 +408,18 @@
         },
         cancelInsertRow() {
           this.insertingNew = false;
+        },
+        formatActionTime(ts) {
+          if (!ts) return 'unknown';
+          // Try to parse as ISO string or timestamp
+          let d = new Date(ts);
+          if (isNaN(d.getTime())) return 'unknown';
+          return d.toLocaleString();
+        },
+        submitObas: async function() {
+          if (this.user && this.user.email) {
+            await this.supabase.from('project').update({ status: 'pending', obas: this.obasText }).eq('owner', this.user.email);
+          }
         }
       }
     }
