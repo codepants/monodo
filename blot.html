@@ -8,6 +8,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
   <style>
+    [x-cloak] { display: none !important; }
     .chunk-row { transition: background 0.2s, border 0.2s; }
     /* .chunk-row.selected { background: #f0fff4; }
     .chunk-row.unselected { background: #fff0f0; } */
@@ -15,6 +16,21 @@
     .chunk-row.latest-row {
       border: 2px solid #00bfff !important;
       box-shadow: 0 0 2px #00bfff;
+    }
+    .user-info-chiclet {
+      position: fixed;
+      top: 2vh;
+      right: 20vw;
+      background-color: #000;
+      color: #fff;
+      border: 2px solid #ff9500;
+      border-radius: 12px;
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(255, 149, 0, 0.2);
+      z-index: 10;
     }
     .shadow-row {
       background: #111 !important;
@@ -58,33 +74,164 @@
       color: #00ff88 !important;
       caret-color: #00ff88;
     }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .verbosity-slider {
+      -webkit-appearance: none;
+      width: 80%;
+      height: 8px;
+      background: #f0f0f0;
+      outline: none;
+      border-radius: 4px;
+    }
+    .verbosity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ff9500;
+      cursor: pointer;
+      border: 1px solid #e87800;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .priority-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ff9500;
+      cursor: pointer;
+      border: 1px solid #e87800;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .delete-x {
+      color: white;
+      background-color: #ff3860;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s;
+    }
+    .delete-x:hover {
+      background-color: #ff1744;
+    }
+    .toggle-btn {
+      background-color: #333;
+      color: #ffe066;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-left: auto;
+    }
+    .toggle-btn:hover {
+      background-color: #444;
+    }
+    .obas-container {
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .fragment-popup {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 320px;
+      height: 480px;
+      background-color: white;
+      border: 2px dotted #888;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .fragment-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .fragment-popup-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0;
+    }
+    .fragment-popup-close {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .fragment-popup-close:hover {
+      background: #0056b3;
+    }
+    .fragment-popup-content {
+      flex: 1;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="section">
   <div class="container" x-data="chunkApp()" x-init="init()">
+
+    <!-- Fragment Output Popup -->
+    <div class="fragment-popup" x-show="showFragmentPopup">
+      <div class="fragment-popup-header">
+        <h4 class="fragment-popup-title">Fragment Output</h4>
+        <div class="fragment-popup-close" @click="closeFragmentPopup">CLOSE</div>
+
+      </div>
+
+      <div class="fragment-popup-content" id="fragmentContentContainer"></div>
+
+    </div>
+    <div class="fragment-popup-close" @click="closeFragmentPopup">CLOSE</div>
+
     <nav class="level mb-4">
       <div class="level-left">
        
         <div class="level-item">
-          <h1 class="title mb-0 ml-2">OBA 19/6</h1>
+          <h1 class="mb-0 ml-2" style="font-size: 1.5rem;">OBA 19/6</h1>
         </div>
       </div>
       <div class="level-right">
-        <div class="level-item">
-          <span class="mr-2 has-text-grey" x-text="displayName"></span>
-        </div>
-        <div class="level-item">
-          <span class="mr-2 has-text-grey-light" x-text="displayEmail"></span>
-        </div>
         <div class="level-item" x-show="!user">
           <button class="button is-light" @click="signInWithGoogle">
             Sign in with Google
           </button>
         </div>
         <div class="level-item" x-show="user" style="display: flex; align-items: center;">
-          <!-- <span class="mr-2 has-text-grey-light" x-text="user.email"></span> -->
           <button class="button is-small is-danger" @click="signOut">Logout</button>
         </div>
+      </div>
+      <!-- User info chiclet -->
+      <div class="user-info-chiclet" x-show="user">
+        <div class="has-text-weight-bold" x-text="displayName"></div>
+        <div class="has-text-grey-dark" x-text="displayEmail"></div>
       </div>
     </nav>
     <div class="box" style="display: flex; flex-direction: row; gap: 2vw;">
@@ -95,6 +242,7 @@
               <th class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">#</th>
               <th>Content</th>
               <th class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">Select</th>
+              <th class="is-narrow" style="width:8vw; min-width:5em; text-align:center;">Verbosity</th>
               <th class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">Order</th>
               <th class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">Delete</th>
             </tr>
@@ -115,6 +263,11 @@
                 <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">
                   <input type="checkbox" :checked="chunk.chunk_select" @change="toggleSelect(chunk)">
                 </td>
+                <td class="is-narrow" style="width:8vw; min-width:5em; text-align:center;">
+                  <div class="slider-container">
+                    <input type="range" class="verbosity-slider" min="1" max="10" step="1" :value="chunk.verbosity || 5" @change="setVerbosity(chunk, $event.target.value)">
+                  </div>
+                </td>
                 <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">
                   <div class="buttons has-addons is-centered">
                     <button class="button is-small move-btn" style="padding:0 0.3em;" :disabled="idx === 0" @click="moveChunk(idx, -1)">&#8593;</button>
@@ -122,18 +275,18 @@
                   </div>
                 </td>
                 <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;">
-                  <button class="button is-danger is-small" style="padding:0 0.5em;" @click="deleteChunk(chunk)">delete</button>
+                  <button class="delete-x" @click="deleteChunk(chunk)">✕</button>
                 </td>
               </tr>
             </template>
             <!-- Shadow row for new insert -->
             <tr x-show="!insertingNew" class="shadow-row" @click="startInsertRow()">
               <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center; color: #bbb;">+</td>
-              <td colspan="4" style="color: #bbb; cursor: pointer;">click to insert new</td>
+              <td colspan="5" style="color: #bbb; cursor: pointer;">click to insert new</td>
             </tr>
             <tr x-show="insertingNew" class="shadow-row">
               <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center; color: #00ff88; background: #111;">+</td>
-              <td colspan="4">
+              <td colspan="5">
                 <div contenteditable="true" class="insert-editable green-black-edit" x-ref="insertInput"
                   @keydown.enter.prevent="saveInsertRow($event)"
                   @keydown.esc="cancelInsertRow()"
@@ -146,7 +299,7 @@
         <div x-show="chunks.length === 0" class="has-text-grey">No chunks yet.</div>
       </div>
       <div style="flex: 1; min-width: 200px; border-radius: 8px; padding: 2vw; box-shadow: 0 2px 8px #ffe06633;">
-        <h2 class="title is-5">output generated: </h2>
+        <h2 style="font-size: 1.1rem; font-weight: normal;">output generated: </h2>
         <div style="display: flex; flex-direction: row; align-items: center; gap: 1em; margin-bottom: 0.5em;">
           <div id="status" x-text="projectStatus"></div>
           <div>
@@ -154,22 +307,39 @@
             <span x-text="formatActionTime(projectActionTime)" style="font-size: 60%"></span>
           </div>
         </div>
-        <div style="width: 25vw; min-width: 200px; display: flex; flex-direction: column; gap: 1.5em;">
-          <div>
+                  <div style="width: 15vw; min-width: 200px; display: flex; flex-direction: column; gap: 1.5em;">
+          <div x-show="!ompOutput.trim()">
             <h3 class="subtitle is-6">obas text:</h3>
-            <pre id="obas_text" x-text="obasText" style="width: 25vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em;"></pre>
+            <pre id="obas_text" x-text="obasText" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em;"></pre>
             <div style="margin-top: 1em; text-align: right;">
               <button class="button is-warning" @click="submitObas()">Submit obas</button>
             </div>
           </div>
-          <div>
-            <h3 class="subtitle is-6">omp output:</h3>
-            <pre id="omp_output" x-text="ompOutput" style="width: 25vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto;"></pre>
+
+          <div x-show="ompOutput.trim()">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+              <h3 class="subtitle is-6 mb-0">obas text:</h3>
+              <button class="toggle-btn" @click="toggleObasView()" x-text="showObasText ? '▲' : '▼'"></button>
+            </div>
+            <div class="obas-container" x-ref="obasContainer" :style="showObasText ? 'max-height: 15vh;' : 'max-height: 0px;'">
+              <pre id="obas_text_collapsed" x-text="obasText" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 15vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em; margin-bottom: 0.5em;"></pre>
+
+            </div>
+            <div style="text-align: right; margin-bottom: 1em;">
+              <button class="button is-warning is-small" @click="submitObas()">Submit obas</button>
+            </div>
+            <button @click="showFragmentPopupDone()">man</button>
+
+            <div style="margin-top: 1em;">
+              <h3 class="subtitle is-6">omp output:</h3>
+              <pre id="omp_output" x-text="ompOutput" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #f5f5f5; border-radius: 6px; padding: 1em;"></pre>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <script>
     function chunkApp() {
       return {
@@ -190,17 +360,33 @@
         projectObas: '',
         projectActionTime: '',
         obasText: '',
+        showObasText: false,
+        showFragmentPopup: false,
+        fragmentOutput: 'waiting',
+        projectFragOut: '',
+        _lastStatusCheck: '',
+        _lastFetchedData: '',
+        _lastFetchTime: 0,
         async init() {
           console.log('init entered')
           if (this._initialized) return;
           this._initialized = true;
           this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+          console.log('Supabase client initialized');
+
           // Check for existing session
           const { data: { session } } = await this.supabase.auth.getSession();
           if (session && session.user) {
+            console.log('User session found, fetching data...');
             this.user = session.user;
+            this._lastFetchTime = Date.now(); // Track first fetch time
             await this.fetchProjectForUser();
             await this.fetchChunks();
+
+            // Check if we need to show the popup after initialization
+            if (this.projectStatus === 'done') {
+              this.showFragmentPopupDone();
+            }
           }
           // Listen for login events
           this.supabase.auth.onAuthStateChange(async (event, session) => {
@@ -212,8 +398,22 @@
               this.user = null;
             }
           });
-          // Poll every 10 seconds to refresh project info
-          setInterval(() => { this.fetchProjectForUser(); }, 10000);
+
+          // Poll every 20 seconds to refresh project info, but only if needed
+          setInterval(async () => {
+            // Only fetch if user is logged in and either:
+            // 1. We're waiting for a result (status=pending)
+            // 2. It's been at least 60 seconds since last fetch
+            const now = Date.now();
+            const timeSinceLastFetch = now - (this._lastFetchTime || 0);
+
+            if (this.user && this.user.email &&
+                (this.projectStatus === 'pending' || timeSinceLastFetch > 6000)) {
+              console.log("Polling for updates...");
+              this._lastFetchTime = now;
+              await this.fetchProjectForUser();
+            }
+          }, 4000);
         },
         async signInWithGoogle() {
           await this.supabase.auth.signInWithOAuth({
@@ -238,29 +438,53 @@
             this.updateObas();
           }
         },
-        async fetchProjectForUser() {console.log("server ping")
+        async fetchProjectForUser() {
+          console.log("server ping")
           if (!this.user || !this.user.email) {
             this.projectStatus = '';
             this.ompOutput = '';
             this.projectObas = '';
             this.projectActionTime = '';
+            this.projectFragOut = '';
             return;
           }
+          console.log('Fetching project data...')
           let { data, error } = await this.supabase
             .from('project')
-            .select('status, omp, obas, action_time')
+            .select('status, omp, obas, action_time, frag_out')
             .eq('owner', this.user.email)
             .single();
+
+          console.log("Data received:", data);
+          console.log("Error:", error);
+
           if (!error && data) {
+            const prevStatus = this.projectStatus;
             this.projectStatus = data.status || '';
             this.ompOutput = data.omp || '';
             this.projectObas = data.obas || '';
             this.projectActionTime = data.action_time || null;
+            this.projectFragOut = data.frag_out || '';
+
+            console.log("Current status:", this.projectStatus);
+            // Cache the fetched data to track changes
+            this._lastFetchedData = JSON.stringify(data);
+
+            // Check if status is 'done'
+            if (this.projectStatus === 'done') {
+              // Check if we haven't shown it before or if the content has changed
+              this.showFragmentPopupDone();
+            }
           } else {
-            this.projectStatus = 'No project found for this user.';
-            this.ompOutput = '';
-            this.projectObas = '';
-            this.projectActionTime = '';
+            console.error("Failed to fetch project data:", error);
+            // Only reset if there's an actual error, not if it's just empty data
+            if (error) {
+              this.projectStatus = 'Error: ' + (error.message || 'No project found for this user');
+              this.ompOutput = '';
+              this.projectObas = '';
+              this.projectActionTime = '';
+              this.projectFragOut = '';
+            }
           }
         },
         async addChunk() {
@@ -272,6 +496,7 @@
               chunk_content: this.newChunkContent,
               chunk_select: true,
               chunk_index: maxIndex + 1,
+              verbosity: 4,
               chunk_owner: this.user && this.user.email ? this.user.email : null
             })
             .select();
@@ -312,6 +537,13 @@
           chunk.chunk_select = !chunk.chunk_select;
           await this.supabase.from('chunk').update({ chunk_select: chunk.chunk_select }).eq('chunk_id', chunk.chunk_id);
         },
+        async setVerbosity(chunk, value) {
+          const verbosity = parseInt(value);
+          if (isNaN(verbosity) || verbosity < 1 || verbosity > 10) return;
+
+          chunk.verbosity = verbosity;
+          await this.supabase.from('chunk').update({ verbosity: verbosity }).eq('chunk_id', chunk.chunk_id);
+        },
         async reindexChunks() {
           for (let i = 0; i < this.chunks.length; i++) {
             let c = this.chunks[i];
@@ -328,7 +560,7 @@
           if (!this.chunks || !this.chunks.length) {
             this.obasText = '';
             this.ompOutput = '';
-            
+
             return;
           }
           // Sort to be sure
@@ -393,6 +625,7 @@
                 chunk_content: value,
                 chunk_select: true,
                 chunk_index: maxIndex + 1,
+                verbosity: 5,
                 chunk_owner: this.user && this.user.email ? this.user.email : null
               })
               .select();
@@ -416,13 +649,36 @@
           if (isNaN(d.getTime())) return 'unknown';
           return d.toLocaleString();
         },
-        submitObas: async function() {
+        submitObas: async function() {alert('submit obas')
           if (this.user && this.user.email) {
             await this.supabase.from('project').update({ status: 'pending', obas: this.obasText }).eq('owner', this.user.email);
           }
+        },
+        toggleObasView: function() {
+          this.showObasText = !this.showObasText;
+        },
+        showFragmentPopupDone: function() {
+          if (this.projectStatus === 'done' && this.projectFragOut) {
+            // Set the fragment output content
+            this.fragmentOutput = this.projectFragOut;
+            // console.log(this.fragmentOutput)
+
+            // Update the DOM element directly instead of using x-html
+            const container = document.getElementById('fragmentContentContainer');
+            if (container) {
+              container.innerHTML = '<section>' + this.projectFragOut + '</section>';
+            }
+
+            // Show the popup
+            this.showFragmentPopup = true;
+          }
+        },
+
+        closeFragmentPopup: function() {
+          this.showFragmentPopup = false;
         }
       }
     }
   </script>
 </body>
-</html> 
+</html>
