@@ -10,8 +10,7 @@
   <style>
     [x-cloak] { display: none !important; }
     .chunk-row { transition: background 0.2s, border 0.2s; }
-    /* .chunk-row.selected { background: #f0fff4; }
-    .chunk-row.unselected { background: #fff0f0; } */
+    .chunk-row.unselected { opacity: 0.1;}
     .move-btn { min-width: 2.5em; }
     .chunk-row.latest-row {
       border: 2px solid #00bfff !important;
@@ -209,11 +208,9 @@
       <div class="fragment-popup-content" id="fragmentContentContainer"></div>
 
     </div>
-    <div class="fragment-popup-close" @click="closeFragmentPopup">CLOSE</div>
 
     <nav class="level mb-4">
       <div class="level-left">
-       
         <div class="level-item">
           <h1 class="mb-0 ml-2" style="font-size: 1.5rem;">OBA 19/6</h1>
         </div>
@@ -251,7 +248,7 @@
             <template x-for="(chunk, idx) in chunks" :key="chunk.chunk_id">
               <tr :class="{'chunk-row': true, 'selected': chunk.chunk_select, 'unselected': !chunk.chunk_select, 'latest-row': chunk.chunk_id === latestRowId}">
                 <td class="is-narrow" style="width:5vw; min-width:2.5em; text-align:center;" x-text="chunk.chunk_index"></td>
-                <td style="max-width: 400px; word-break: break-all; cursor: pointer;" 
+                <td style="max-width: 400px; word-break: break-all; cursor: pointer;"
                   :contenteditable="editingChunkId === chunk.chunk_id"
                   @click="enableEdit(chunk)"
                   @blur="saveEdit(chunk, $event)"
@@ -328,8 +325,6 @@
             <div style="text-align: right; margin-bottom: 1em;">
               <button class="button is-warning is-small" @click="submitObas()">Submit obas</button>
             </div>
-            <button @click="showFragmentPopupDone()">man</button>
-
             <div style="margin-top: 1em;">
               <h3 class="subtitle is-6">omp output:</h3>
               <pre id="omp_output" x-text="ompOutput" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #f5f5f5; border-radius: 6px; padding: 1em;"></pre>
@@ -365,13 +360,24 @@
         fragmentOutput: 'waiting',
         projectFragOut: '',
         _lastStatusCheck: '',
-        _lastFetchedData: '',
         _lastFetchTime: 0,
+        projectPollInterval: null,
+        projectPollIntervalMs: 5000,
         async init() {
           console.log('init entered')
-          if (this._initialized) return;
+          if (this._initialized) {console.log('already init');return;}
           this._initialized = true;
-          this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+          this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey, {
+            auth: {
+              autoRefreshToken: true,
+              persistSession: true
+            },
+            realtime: {
+              params: {
+                eventsPerSecond: 1
+              }
+            }
+          });
           console.log('Supabase client initialized');
 
           // Check for existing session
@@ -380,40 +386,44 @@
             console.log('User session found, fetching data...');
             this.user = session.user;
             this._lastFetchTime = Date.now(); // Track first fetch time
-            await this.fetchProjectForUser();
+            // await this.fetchProjectForUser();
             await this.fetchChunks();
-
+            this.startProjectPolling();
             // Check if we need to show the popup after initialization
             if (this.projectStatus === 'done') {
               this.showFragmentPopupDone();
             }
+            // --- Supabase Realtime subscription for project status changes ---
+            this.supabase
+              .channel('project-changes')
+              .on('postgres_changes', {
+                event: '*', // Listen to all events
+                schema: 'public',
+                table: 'project',
+              }, async (payload) => {
+                console.log('Change received!', payload);
+                // Only refetch if the change is for the current user's project
+                if (payload.new && payload.new.owner === this.user.email) {
+                  console.log('fetch at change receive');
+                  await this.fetchProjectForUser();
+                }
+              })
+              .subscribe();
+            // --- End Realtime subscription ---
           }
           // Listen for login events
           this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (session && session.user) {
               this.user = session.user;
+              console.log('fetch at login')
               await this.fetchProjectForUser();
               this.fetchChunks();
+              this.startProjectPolling();
             } else {
               this.user = null;
+              this.stopProjectPolling();
             }
           });
-
-          // Poll every 20 seconds to refresh project info, but only if needed
-          setInterval(async () => {
-            // Only fetch if user is logged in and either:
-            // 1. We're waiting for a result (status=pending)
-            // 2. It's been at least 60 seconds since last fetch
-            const now = Date.now();
-            const timeSinceLastFetch = now - (this._lastFetchTime || 0);
-
-            if (this.user && this.user.email &&
-                (this.projectStatus === 'pending' || timeSinceLastFetch > 6000)) {
-              console.log("Polling for updates...");
-              this._lastFetchTime = now;
-              await this.fetchProjectForUser();
-            }
-          }, 4000);
         },
         async signInWithGoogle() {
           await this.supabase.auth.signInWithOAuth({
@@ -426,6 +436,7 @@
         async signOut() {
           await this.supabase.auth.signOut();
           this.user = null;
+          this.stopProjectPolling();
         },
         async fetchChunks() {
           if (!this.supabase) return;
@@ -440,6 +451,8 @@
         },
         async fetchProjectForUser() {
           console.log("server ping")
+          console.log(this.user);
+          console.log(this.user.email);
           if (!this.user || !this.user.email) {
             this.projectStatus = '';
             this.ompOutput = '';
@@ -453,7 +466,8 @@
             .from('project')
             .select('status, omp, obas, action_time, frag_out')
             .eq('owner', this.user.email)
-            .single();
+            .single()
+            .abortSignal(AbortSignal.timeout(2000)); // 2 second timeout
 
           console.log("Data received:", data);
           console.log("Error:", error);
@@ -467,8 +481,6 @@
             this.projectFragOut = data.frag_out || '';
 
             console.log("Current status:", this.projectStatus);
-            // Cache the fetched data to track changes
-            this._lastFetchedData = JSON.stringify(data);
 
             // Check if status is 'done'
             if (this.projectStatus === 'done') {
@@ -513,7 +525,7 @@
           }
         },
         async deleteChunk(chunk) {
-          if (!this.supabase) return;
+          if (!this.supabase) {console.log("delete no sup");return;}
           await this.supabase.from('chunk').delete().eq('chunk_id', chunk.chunk_id);
           this.chunks = this.chunks.filter(c => c.chunk_id !== chunk.chunk_id);
           await this.reindexChunks();
@@ -649,7 +661,7 @@
           if (isNaN(d.getTime())) return 'unknown';
           return d.toLocaleString();
         },
-        submitObas: async function() {alert('submit obas')
+        submitObas: async function() {
           if (this.user && this.user.email) {
             await this.supabase.from('project').update({ status: 'pending', obas: this.obasText }).eq('owner', this.user.email);
           }
@@ -673,9 +685,24 @@
             this.showFragmentPopup = true;
           }
         },
-
         closeFragmentPopup: function() {
           this.showFragmentPopup = false;
+        },
+        startProjectPolling() {
+          // Prevent multiple intervals
+          this.stopProjectPolling();
+          // Only poll if user is logged in
+          if (!this.user) return;
+          this.projectPollInterval = setInterval(async () => {
+            // console.log('someday')
+            // await this.fetchProjectForUser();
+          }, this.projectPollIntervalMs);
+        },
+        stopProjectPolling() {
+          if (this.projectPollInterval) {
+            clearInterval(this.projectPollInterval);
+            this.projectPollInterval = null;
+          }
         }
       }
     }
