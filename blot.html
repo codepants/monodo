@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OBA synthesizer</title>
+  <title>OBAS PLAN TOOL 17 Jul 2025</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
@@ -305,29 +305,11 @@
           </div>
         </div>
                   <div style="width: 15vw; min-width: 200px; display: flex; flex-direction: column; gap: 1.5em;">
-          <div x-show="!ompOutput.trim()">
+          <div>
             <h3 class="subtitle is-6">obas text:</h3>
             <pre id="obas_text" x-text="obasText" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em;"></pre>
             <div style="margin-top: 1em; text-align: right;">
               <button class="button is-warning" @click="submitObas()">Submit obas</button>
-            </div>
-          </div>
-
-          <div x-show="ompOutput.trim()">
-            <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
-              <h3 class="subtitle is-6 mb-0">obas text:</h3>
-              <button class="toggle-btn" @click="toggleObasView()" x-text="showObasText ? '▲' : '▼'"></button>
-            </div>
-            <div class="obas-container" x-ref="obasContainer" :style="showObasText ? 'max-height: 15vh;' : 'max-height: 0px;'">
-              <pre id="obas_text_collapsed" x-text="obasText" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 15vh; overflow: auto; background: #222; color: #ffe066; border-radius: 6px; padding: 1em; margin-bottom: 0.5em;"></pre>
-
-            </div>
-            <div style="text-align: right; margin-bottom: 1em;">
-              <button class="button is-warning is-small" @click="submitObas()">Submit obas</button>
-            </div>
-            <div style="margin-top: 1em;">
-              <h3 class="subtitle is-6">omp output:</h3>
-              <pre id="omp_output" x-text="ompOutput" style="width: 15vw; min-width: 200px; height: 15vh; min-height: 80px; max-height: 40vh; overflow: auto; background: #f5f5f5; border-radius: 6px; padding: 1em;"></pre>
             </div>
           </div>
         </div>
@@ -348,7 +330,6 @@
         latestRowId: null,
         showAddChunk: false,
         editingChunkId: null,
-        ompOutput: '',
         insertingNew: false,
         _insertingRowLock: false,
         projectStatus: '',
@@ -358,7 +339,6 @@
         showObasText: false,
         showFragmentPopup: false,
         fragmentOutput: 'waiting',
-        projectFragOut: '',
         _lastStatusCheck: '',
         _lastFetchTime: 0,
         projectPollInterval: null,
@@ -389,10 +369,7 @@
             // await this.fetchProjectForUser();
             await this.fetchChunks();
             this.startProjectPolling();
-            // Check if we need to show the popup after initialization
-            if (this.projectStatus === 'done') {
-              this.showFragmentPopupDone();
-            }
+            
             // --- Supabase Realtime subscription for project status changes ---
             this.supabase
               .channel('project-changes')
@@ -455,16 +432,14 @@
           console.log(this.user.email);
           if (!this.user || !this.user.email) {
             this.projectStatus = '';
-            this.ompOutput = '';
             this.projectObas = '';
             this.projectActionTime = '';
-            this.projectFragOut = '';
             return;
           }
           console.log('Fetching project data...')
           let { data, error } = await this.supabase
             .from('project')
-            .select('status, omp, obas, action_time, frag_out')
+            .select('status, obas, action_time')
             .eq('owner', this.user.email)
             .single()
             .abortSignal(AbortSignal.timeout(2000)); // 2 second timeout
@@ -475,10 +450,8 @@
           if (!error && data) {
             const prevStatus = this.projectStatus;
             this.projectStatus = data.status || '';
-            this.ompOutput = data.omp || '';
             this.projectObas = data.obas || '';
             this.projectActionTime = data.action_time || null;
-            this.projectFragOut = data.frag_out || '';
 
             console.log("Current status:", this.projectStatus);
 
@@ -492,10 +465,8 @@
             // Only reset if there's an actual error, not if it's just empty data
             if (error) {
               this.projectStatus = 'Error: ' + (error.message || 'No project found for this user');
-              this.ompOutput = '';
               this.projectObas = '';
               this.projectActionTime = '';
-              this.projectFragOut = '';
             }
           }
         },
@@ -571,18 +542,16 @@
           // Concatenate chunk_content in chunk_index order
           if (!this.chunks || !this.chunks.length) {
             this.obasText = '';
-            this.ompOutput = '';
 
             return;
           }
           // Sort to be sure
           const sorted = [...this.chunks].sort((a, b) => a.chunk_index - b.chunk_index);
           this.obasText = sorted.map(c => c.chunk_content).join('\n');
-          // this.ompOutput = this.obasText;
-          // // Update project.obas in Supabase
-          // if (this.user && this.user.email) {
-          //   await this.supabase.from('project').update({ status: "pending", obas: this.obasText }).eq('owner', this.user.email);
-          // }
+          
+          if (this.user && this.user.email) {
+            await this.supabase.from('project').update({ status: "pending", obas: this.obasText }).eq('owner', this.user.email);
+          }
         },
         get displayName() {
           if (!this.user) return 'guest';
@@ -668,25 +637,6 @@
         },
         toggleObasView: function() {
           this.showObasText = !this.showObasText;
-        },
-        showFragmentPopupDone: function() {
-          if (this.projectStatus === 'done' && this.projectFragOut) {
-            // Set the fragment output content
-            this.fragmentOutput = this.projectFragOut;
-            // console.log(this.fragmentOutput)
-
-            // Update the DOM element directly instead of using x-html
-            const container = document.getElementById('fragmentContentContainer');
-            if (container) {
-              container.innerHTML = '<section>' + this.projectFragOut + '</section>';
-            }
-
-            // Show the popup
-            this.showFragmentPopup = true;
-          }
-        },
-        closeFragmentPopup: function() {
-          this.showFragmentPopup = false;
         },
         startProjectPolling() {
           // Prevent multiple intervals
