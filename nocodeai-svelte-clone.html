@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoCodeAI Singapore - Svelte Clone</title>
+    <script src="https://unpkg.com/svelte@4/dist/svelte.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2.5rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .mobile-menu {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+        
+        .mobile-menu span {
+            width: 25px;
+            height: 3px;
+            background: #4a5568;
+            margin: 3px 0;
+            transition: 0.3s;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 140px 0 100px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="1" fill="white" opacity="0.1"/><circle cx="10" cy="90" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .hero .subtitle {
+            font-size: 1.4rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            padding: 1rem 2.5rem;
+            border: 2px solid white;
+            border-radius: 50px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-3px);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+            background: #f7fafc;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #1a202c;
+            font-weight: 800;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 4rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #1a202c;
+            font-weight: 700;
+        }
+        
+        .feature-card p {
+            color: #718096;
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+        
+        /* Services Section */
+        .services {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        .service-item {
+            padding: 2.5rem 2rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .service-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .service-item h4 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        
+        .service-item p {
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        /* About Section */
+        .about {
+            padding: 100px 0;
+            background: #f7fafc;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5rem;
+            align-items: center;
+        }
+        
+        .about-text h2 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            color: #1a202c;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        
+        .about-text p {
+            color: #718096;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            line-height: 1.7;
+        }
+        
+        .about-image {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 400px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            text-align: center;
+        }
+        
+        .stat-item h3 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-item p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* Contact Section */
+        .contact {
+            padding: 100px 0;
+            background: white;
+        }
+        
+        .contact-form {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #f7fafc;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.08);
+        }
+        
+        .form-group {
+            margin-bottom: 2rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: #1a202c;
+            font-size: 1.1rem;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1a202c;
+            color: white;
+            padding: 60px 0 30px;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .footer-section h4 {
+            margin-bottom: 1.5rem;
+            color: #667eea;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 0.8rem;
+        }
+        
+        .footer-section ul li a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section ul li a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #2d3748;
+            padding-top: 2rem;
+            text-align: center;
+            color: #a0aec0;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .mobile-menu {
+                display: flex;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            
+            .features-grid,
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+            
+            .about-text h2 {
+                font-size: 2.2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .hero {
+                padding: 120px 0 80px;
+            }
+            
+            .features,
+            .services,
+            .about,
+            .contact {
+                padding: 60px 0;
+            }
+            
+            .contact-form {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Svelte Component
+        class NoCodeAIApp {
+            constructor(target) {
+                this.target = target;
+                this.state = {
+                    mobileMenuOpen: false,
+                    formData: {
+                        name: '',
+                        email: '',
+                        message: ''
+                    }
+                };
+                this.render();
+                this.bindEvents();
+            }
+
+            setState(newState) {
+                this.state = { ...this.state, ...newState };
+                this.render();
+            }
+
+            render() {
+                this.target.innerHTML = `
+                    <div class="app">
+                        <!-- Header -->
+                        <header class="header">
+                            <div class="container">
+                                <nav class="nav">
+                                    <a href="#" class="logo">NoCodeAI.sg</a>
+                                    <ul class="nav-links">
+                                        <li><a href="#home">Home</a></li>
+                                        <li><a href="#features">Features</a></li>
+                                        <li><a href="#services">Services</a></li>
+                                        <li><a href="#about">About</a></li>
+                                        <li><a href="#contact">Contact</a></li>
+                                    </ul>
+                                    <div class="mobile-menu">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                    <a href="#contact" class="cta-button">Get Started</a>
+                                </nav>
+                            </div>
+                        </header>
+
+                        <!-- Hero Section -->
+                        <section id="home" class="hero">
+                            <div class="container">
+                                <div class="hero-content">
+                                    <h1>Build AI Solutions Without Code</h1>
+                                    <p class="subtitle">Transform your business with powerful AI automation tools designed for Singapore enterprises. No programming skills required.</p>
+                                    <div class="hero-buttons">
+                                        <a href="#services" class="btn-primary">Start Building</a>
+                                        <a href="#demo" class="btn-secondary">Watch Demo</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Features Section -->
+                        <section id="features" class="features">
+                            <div class="container">
+                                <h2 class="section-title">Why Choose NoCodeAI?</h2>
+                                <p class="section-subtitle">Powerful AI tools designed specifically for Singapore businesses</p>
+                                <div class="features-grid">
+                                    <div class="feature-card">
+                                        <div class="feature-icon">🚀</div>
+                                        <h3>Lightning Fast Deployment</h3>
+                                        <p>Launch AI solutions in minutes, not months. Our intuitive drag-and-drop interface makes complex AI accessible to everyone.</p>
+                                    </div>
+                                    <div class="feature-card">
+                                        <div class="feature-icon">🎯</div>
+                                        <h3>Singapore-Focused AI</h3>
+                                        <p>Advanced machine learning algorithms tailored for Singapore businesses, regulations, and local market needs.</p>
+                                    </div>
+                                    <div class="feature-card">
+                                        <div class="feature-icon">💡</div>
+                                        <h3>Smart Integration</h3>
+                                        <p>Seamlessly connect with your existing tools and workflows for maximum efficiency and minimal disruption.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Stats Section -->
+                        <section class="stats">
+                            <div class="container">
+                                <div class="stats-grid">
+                                    <div class="stat-item">
+                                        <h3>500+</h3>
+                                        <p>Businesses Transformed</p>
+                                    </div>
+                                    <div class="stat-item">
+                                        <h3>95%</h3>
+                                        <p>Customer Satisfaction</p>
+                                    </div>
+                                    <div class="stat-item">
+                                        <h3>24/7</h3>
+                                        <p>AI Support Available</p>
+                                    </div>
+                                    <div class="stat-item">
+                                        <h3>10x</h3>
+                                        <p>Faster Implementation</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Services Section -->
+                        <section id="services" class="services">
+                            <div class="container">
+                                <h2 class="section-title">Our AI Services</h2>
+                                <p class="section-subtitle">Comprehensive AI solutions for every business need</p>
+                                <div class="services-grid">
+                                    <div class="service-item">
+                                        <h4>AI Chatbots</h4>
+                                        <p>Intelligent customer service automation that understands context and provides personalized responses 24/7.</p>
+                                    </div>
+                                    <div class="service-item">
+                                        <h4>Process Automation</h4>
+                                        <p>Streamline repetitive business tasks with smart automation that learns and adapts to your workflows.</p>
+                                    </div>
+                                    <div class="service-item">
+                                        <h4>Data Analytics</h4>
+                                        <p>AI-powered insights from your data with predictive analytics and real-time business intelligence.</p>
+                                    </div>
+                                    <div class="service-item">
+                                        <h4>Custom AI Solutions</h4>
+                                        <p>Tailored AI tools designed specifically for your industry and business requirements.</p>
+                                    </div>
+                                    <div class="service-item">
+                                        <h4>Document Processing</h4>
+                                        <p>Automated document analysis, extraction, and processing with high accuracy and speed.</p>
+                                    </div>
+                                    <div class="service-item">
+                                        <h4>Predictive Modeling</h4>
+                                        <p>Advanced forecasting and trend analysis to help you make data-driven business decisions.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- About Section -->
+                        <section id="about" class="about">
+                            <div class="container">
+                                <div class="about-content">
+                                    <div class="about-text">
+                                        <h2>About NoCodeAI Singapore</h2>
+                                        <p>We're Singapore's leading no-code AI platform, empowering businesses to harness the power of artificial intelligence without technical complexity.</p>
+                                        <p>Our mission is to democratize AI technology, making it accessible to every business in Singapore and beyond. With our team of AI experts and local market knowledge, we deliver solutions that truly work.</p>
+                                        <a href="#services" class="btn-primary">Explore Solutions</a>
+                                    </div>
+                                    <div class="about-image">
+                                        <div>🤖 AI Innovation Hub</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Contact Section -->
+                        <section id="contact" class="contact">
+                            <div class="container">
+                                <h2 class="section-title">Get In Touch</h2>
+                                <p class="section-subtitle">Ready to transform your business with AI? Let's talk!</p>
+                                <form class="contact-form" id="contactForm">
+                                    <div class="form-group">
+                                        <label for="name">Full Name</label>
+                                        <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email">Email Address</label>
+                                        <input type="email" id="email" name="email" required placeholder="Enter your email address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="message">Message</label>
+                                        <textarea id="message" name="message" required placeholder="Tell us about your AI needs..."></textarea>
+                                    </div>
+                                    <button type="submit" class="submit-btn">Send Message</button>
+                                </form>
+                            </div>
+                        </section>
+
+                        <!-- Footer -->
+                        <footer class="footer">
+                            <div class="container">
+                                <div class="footer-content">
+                                    <div class="footer-section">
+                                        <h4>Company</h4>
+                                        <ul>
+                                            <li><a href="#about">About Us</a></li>
+                                            <li><a href="#careers">Careers</a></li>
+                                            <li><a href="#press">Press</a></li>
+                                            <li><a href="#blog">Blog</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="footer-section">
+                                        <h4>Services</h4>
+                                        <ul>
+                                            <li><a href="#services">AI Chatbots</a></li>
+                                            <li><a href="#services">Automation</a></li>
+                                            <li><a href="#services">Analytics</a></li>
+                                            <li><a href="#services">Custom Solutions</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="footer-section">
+                                        <h4>Support</h4>
+                                        <ul>
+                                            <li><a href="#help">Help Center</a></li>
+                                            <li><a href="#docs">Documentation</a></li>
+                                            <li><a href="#contact">Contact</a></li>
+                                            <li><a href="#api">API Reference</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="footer-section">
+                                        <h4>Legal</h4>
+                                        <ul>
+                                            <li><a href="#privacy">Privacy Policy</a></li>
+                                            <li><a href="#terms">Terms of Service</a></li>
+                                            <li><a href="#security">Security</a></li>
+                                            <li><a href="#compliance">Compliance</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="footer-bottom">
+                                    <p>&copy; 2025 NoCodeAI Singapore. All rights reserved. | Made with ❤️ in Singapore</p>
+                                </div>
+                            </div>
+                        </footer>
+                    </div>
+                `;
+            }
+
+            bindEvents() {
+                // Smooth scrolling for navigation links
+                document.addEventListener('click', (e) => {
+                    if (e.target.matches('a[href^="#"]')) {
+                        e.preventDefault();
+                        const target = document.querySelector(e.target.getAttribute('href'));
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+
+                // Form submission
+                const form = document.getElementById('contactForm');
+                if (form) {
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(form);
+                        const data = Object.fromEntries(formData);
+                        
+                        // Simulate form submission
+                        alert(`Thank you ${data.name}! Your message has been sent. We'll get back to you soon.`);
+                        form.reset();
+                    });
+                }
+
+                // Header scroll effect
+                window.addEventListener('scroll', () => {
+                    const header = document.querySelector('.header');
+                    if (window.scrollY > 100) {
+                        header.style.background = 'rgba(255, 255, 255, 0.98)';
+                        header.style.boxShadow = '0 4px 30px rgba(0,0,0,0.12)';
+                    } else {
+                        header.style.background = 'rgba(255, 255, 255, 0.95)';
+                        header.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+                    }
+                });
+
+                // Intersection Observer for animations
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('fade-in');
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe elements for animation
+                setTimeout(() => {
+                    const animateElements = document.querySelectorAll('.feature-card, .service-item, .stat-item');
+                    animateElements.forEach(el => observer.observe(el));
+                }, 100);
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new NoCodeAIApp(document.getElementById('app'));
+        });
+    </script>
+</body>
+</html>

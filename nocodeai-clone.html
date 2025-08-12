@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoCodeAI Singapore - Clone</title>
+    <script src="https://unpkg.com/svelte@3/dist/svelte.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6366f1;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #6366f1;
+        }
+        
+        .cta-button {
+            background: #6366f1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .cta-button:hover {
+            background: #5855eb;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #6366f1;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            padding: 1rem 2rem;
+            border: 2px solid white;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #6366f1;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background: #f8fafc;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #1e293b;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: #6366f1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        
+        .feature-card p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+        
+        /* Services Section */
+        .services {
+            padding: 80px 0;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .service-item {
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .service-item:hover {
+            border-color: #6366f1;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+        }
+        
+        .service-item h4 {
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* About Section */
+        .about {
+            padding: 80px 0;
+            background: #f8fafc;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .about-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+        }
+        
+        .about-text p {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .about-image {
+            background: #6366f1;
+            height: 300px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        /* Contact Section */
+        .contact {
+            padding: 80px 0;
+        }
+        
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            background: #6366f1;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #5855eb;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            color: #6366f1;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-section ul li a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-section ul li a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #334155;
+            padding-top: 2rem;
+            color: #94a3b8;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .features-grid,
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const { SvelteComponent, element, text, attr, listen, detach, insert, noop, safe_not_equal, create_component, mount_component, destroy_component } = window.svelte.internal;
+
+        function create_fragment(ctx) {
+            let div;
+            let header;
+            let nav;
+            let div0;
+            let div1;
+            let a0;
+            let t1;
+            let ul;
+            let li0;
+            let a1;
+            let t3;
+            let li1;
+            let a2;
+            let t5;
+            let li2;
+            let a3;
+            let t7;
+            let li3;
+            let a4;
+            let t9;
+            let li4;
+            let a5;
+            let t11;
+            let div2;
+            let a6;
+            let t13;
+            let section0;
+            let div3;
+            let h1;
+            let t15;
+            let p0;
+            let t17;
+            let div4;
+            let a7;
+            let t19;
+            let a8;
+            let t21;
+            let section1;
+            let div5;
+            let h20;
+            let t23;
+            let div6;
+            let div7;
+            let div8;
+            let t24;
+            let h30;
+            let t26;
+            let p1;
+            let t28;
+            let div9;
+            let div10;
+            let t29;
+            let h31;
+            let t31;
+            let p2;
+            let t33;
+            let div11;
+            let div12;
+            let t34;
+            let h32;
+            let t36;
+            let p3;
+            let t38;
+            let section2;
+            let div13;
+            let h21;
+            let t40;
+            let div14;
+            let div15;
+            let h40;
+            let t42;
+            let p4;
+            let t44;
+            let div16;
+            let h41;
+            let t46;
+            let p5;
+            let t48;
+            let div17;
+            let h42;
+            let t50;
+            let p6;
+            let t52;
+            let div18;
+            let h43;
+            let t54;
+            let p7;
+            let t56;
+            let section3;
+            let div19;
+            let div20;
+            let div21;
+            let h22;
+            let t58;
+            let p8;
+            let t60;
+            let p9;
+            let t62;
+            let a9;
+            let t64;
+            let div22;
+            let t66;
+            let section4;
+            let div23;
+            let h23;
+            let t68;
+            let form;
+            let div24;
+            let label0;
+            let t70;
+            let input0;
+            let t71;
+            let div25;
+            let label1;
+            let t73;
+            let input1;
+            let t74;
+            let div26;
+            let label2;
+            let t76;
+            let textarea;
+            let t77;
+            let button;
+            let t79;
+            let footer;
+            let div27;
+            let div28;
+            let div29;
+            let h44;
+            let t81;
+            let ul0;
+            let li5;
+            let a10;
+            let t83;
+            let li6;
+            let a11;
+            let t85;
+            let li7;
+            let a12;
+            let t87;
+            let div30;
+            let h45;
+            let t89;
+            let ul1;
+            let li8;
+            let a13;
+            let t91;
+            let li9;
+            let a14;
+            let t93;
+            let li10;
+            let a15;
+            let t95;
+            let div31;
+            let h46;
+            let t97;
+            let ul2;
+            let li11;
+            let a16;
+            let t99;
+            let li12;
+            let a17;
+            let t101;
+            let li13;
+            let a18;
+            let t103;
+            let div32;
+            let p10;
+
+            return {
+                c() {
+                    div = element("div");
+                    header = element("header");
+                    nav = element("nav");
+                    div0 = element("div");
+                    div1 = element("div");
+                    a0 = element("a");
+                    a0.textContent = "NoCodeAI.sg";
+                    t1 = text("\n                ");
+                    ul = element("ul");
+                    li0 = element("li");
+                    a1 = element("a");
+                    a1.textContent = "Home";
+                    t3 = text("\n                    ");
+                    li1 = element("li");
+                    a2 = element("a");
+                    a2.textContent = "Services";
+                    t5 = text("\n                    ");
+                    li2 = element("li");
+                    a3 = element("a");
+                    a3.textContent = "About";
+                    t7 = text("\n                    ");
+                    li3 = element("li");
+                    a4 = element("a");
+                    a4.textContent = "Blog";
+                    t9 = text("\n                    ");
+                    li4 = element("li");
+                    a5 = element("a");
+                    a5.textContent = "Contact";
+                    t11 = text("\n                ");
+                    div2 = element("div");
+                    a6 = element("a");
+                    a6.textContent = "Get Started";
+                    t13 = text("\n        ");
+                    section0 = element("section");
+                    div3 = element("div");
+                    h1 = element("h1");
+                    h1.textContent = "Build AI Solutions Without Code";
+                    t15 = text("\n            ");
+                    p0 = element("p");
+                    p0.textContent = "Transform your business with powerful AI automation tools. No programming skills required.";
+                    t17 = text("\n            ");
+                    div4 = element("div");
+                    a7 = element("a");
+                    a7.textContent = "Start Building";
+                    t19 = text("\n                ");
+                    a8 = element("a");
+                    a8.textContent = "Watch Demo";
+                    t21 = text("\n        ");
+                    section1 = element("section");
+                    div5 = element("div");
+                    h20 = element("h2");
+                    h20.textContent = "Why Choose NoCodeAI?";
+                    t23 = text("\n            ");
+                    div6 = element("div");
+                    div7 = element("div");
+                    div8 = element("div");
+                    t24 = text("🚀");
+                    t25 = text("\n                ");
+                    h30 = element("h3");
+                    h30.textContent = "Fast Deployment";
+                    t26 = text("\n                ");
+                    p1 = element("p");
+                    p1.textContent = "Launch AI solutions in minutes, not months. Our drag-and-drop interface makes it simple.";
+                    t28 = text("\n            ");
+                    div9 = element("div");
+                    div10 = element("div");
+                    t29 = text("🎯");
+                    t30 = text("\n                ");
+                    h31 = element("h3");
+                    h31.textContent = "Precision AI";
+                    t31 = text("\n                ");
+                    p2 = element("p");
+                    p2.textContent = "Advanced machine learning algorithms tailored for Singapore businesses and regulations.";
+                    t33 = text("\n            ");
+                    div11 = element("div");
+                    div12 = element("div");
+                    t34 = text("💡");
+                    t35 = text("\n                ");
+                    h32 = element("h3");
+                    h32.textContent = "Smart Integration";
+                    t36 = text("\n                ");
+                    p3 = element("p");
+                    p3.textContent = "Seamlessly connect with your existing tools and workflows for maximum efficiency.";
+                    t38 = text("\n        ");
+                    section2 = element("section");
+                    div13 = element("div");
+                    h21 = element("h2");
+                    h21.textContent = "Our Services";
+                    t40 = text("\n            ");
+                    div14 = element("div");
+                    div15 = element("div");
+                    h40 = element("h4");
+                    h40.textContent = "AI Chatbots";
+                    t42 = text("\n                ");
+                    p4 = element("p");
+                    p4.textContent = "Intelligent customer service automation";
+                    t44 = text("\n            ");
+                    div16 = element("div");
+                    h41 = element("h4");
+                    h41.textContent = "Process Automation";
+                    t46 = text("\n                ");
+                    p5 = element("p");
+                    p5.textContent = "Streamline repetitive business tasks";
+                    t48 = text("\n            ");
+                    div17 = element("div");
+                    h42 = element("h4");
+                    h42.textContent = "Data Analytics";
+                    t50 = text("\n                ");
+                    p6 = element("p");
+                    p6.textContent = "AI-powered insights from your data";
+                    t52 = text("\n            ");
+                    div18 = element("div");
+                    h43 = element("h4");
+                    h43.textContent = "Custom Solutions";
+                    t54 = text("\n                ");
+                    p7 = element("p");
+                    p7.textContent = "Tailored AI tools for your specific needs";
+                    t56 = text("\n        ");
+                    section3 = element("section");
+                    div19 = element("div");
+                    div20 = element("div");
+                    div21 = element("div");
+                    h22 = element("h2");
+                    h22.textContent = "About NoCodeAI Singapore";
+                    t58 = text("\n                ");
+                    p8 = element("p");
+                    p8.textContent = "We're Singapore's leading no-code AI platform, empowering businesses to harness the power of artificial intelligence without technical complexity.";
+                    t60 = text("\n                ");
+                    p9 = element("p");
+                    p9.textContent = "Our mission is to democratize AI technology, making it accessible to every business in Singapore and beyond.";
+                    t62 = text("\n                ");
+                    a9 = element("a");
+                    a9.textContent = "Learn More";
+                    t64 = text("\n            ");
+                    div22 = element("div");
+                    div22.textContent = "AI Innovation Hub";
+                    t66 = text("\n        ");
+                    section4 = element("section");
+                    div23 = element("div");
+                    h23 = element("h2");
+                    h23.textContent = "Get In Touch";
+                    t68 = text("\n            ");
+                    form = element("form");
+                    div24 = element("div");
+                    label0 = element("label");
+                    label0.textContent = "Name";
+                    t70 = text("\n                ");
+                    input0 = element("input");
+                    t71 = text("\n            ");
+                    div25 = element("div");
+                    label1 = element("label");
+                    label1.textContent = "Email";
+                    t73 = text("\n                ");
+                    input1 = element("input");
+                    t74 = text("\n            ");
+                    div26 = element("div");
+                    label2 = element("label");
+                    label2.textContent = "Message";
+                    t76 = text("\n                ");
+                    textarea = element("textarea");
+                    t77 = text("\n            ");
+                    button = element("button");
+                    button.textContent = "Send Message";
+                    t79 = text("\n        ");
+                    footer = element("footer");
+                    div27 = element("div");
+                    div28 = element("div");
+                    div29 = element("div");
+                    h44 = element("h4");
+                    h44.textContent = "Company";
+                    t81 = text("\n                ");
+                    ul0 = element("ul");
+                    li5 = element("li");
+                    a10 = element("a");
+                    a10.textContent = "About Us";
+                    t83 = text("\n                    ");
+                    li6 = element("li");
+                    a11 = element("a");
+                    a11.textContent = "Careers";
+                    t85 = text("\n                    ");
+                    li7 = element("li");
+                    a12 = element("a");
+                    a12.textContent = "Press";
+                    t87 = text("\n            ");
+                    div30 = element("div");
+                    h45 = element("h4");
+                    h45.textContent = "Services";
+                    t89 = text("\n                ");
+                    ul1 = element("ul");
+                    li8 = element("li");
+                    a13 = element("a");
+                    a13.textContent = "AI Chatbots";
+                    t91 = text("\n                    ");
+                    li9 = element("li");
+                    a14 = element("a");
+                    a14.textContent = "Automation";
+                    t93 = text("\n                    ");
+                    li10 = element("li");
+                    a15 = element("a");
+                    a15.textContent = "Analytics";
+                    t95 = text("\n            ");
+                    div31 = element("div");
+                    h46 = element("h4");
+                    h46.textContent = "Support";
+                    t97 = text("\n                ");
+                    ul2 = element("ul");
+                    li11 = element("li");
+                    a16 = element("a");
+                    a16.textContent = "Help Center";
+                    t99 = text("\n                    ");
+                    li12 = element("li");
+                    a17 = element("a");
+                    a17.textContent = "Documentation";
+                    t101 = text("\n                    ");
+                    li13 = element("li");
+                    a18 = element("a");
+                    a18.textContent = "Contact";
+                    t103 = text("\n        ");
+                    div32 = element("div");
+                    p10 = element("p");
+                    p10.textContent = "© 2025 NoCodeAI Singapore. All rights reserved.";
+
+                    attr(a0, "href", "#");
+                    attr(a0, "class", "logo");
+                    attr(a1, "href", "#home");
+                    attr(a2, "href", "#services");
+                    attr(a3, "href", "#about");
+                    attr(a4, "href", "#blog");
+                    attr(a5, "href", "#contact");
+                    attr(ul, "class", "nav-links");
+                    attr(a6, "href", "#contact");
+                    attr(a6, "class", "cta-button");
+                    attr(nav, "class", "nav");
+                    attr(div0, "class", "container");
+                    attr(header, "class", "header");
+                    attr(h1, "class", "");
+                    attr(p0, "class", "");
+                    attr(a7, "href", "#services");
+                    attr(a7, "class", "btn-primary");
+                    attr(a8, "href", "#demo");
+                    attr(a8, "class", "btn-secondary");
+                    attr(div4, "class", "hero-buttons");
+                    attr(div3, "class", "container");
+                    attr(section0, "class", "hero");
+                    attr(h20, "class", "section-title");
+                    attr(div8, "class", "feature-icon");
+                    attr(div7, "class", "feature-card");
+                    attr(div10, "class", "feature-icon");
+                    attr(div9, "class", "feature-card");
+                    attr(div12, "class", "feature-icon");
+                    attr(div11, "class", "feature-card");
+                    attr(div6, "class", "features-grid");
+                    attr(div5, "class", "container");
+                    attr(section1, "class", "features");
+                    attr(h21, "class", "section-title");
+                    attr(div15, "class", "service-item");
+                    attr(div16, "class", "service-item");
+                    attr(div17, "class", "service-item");
+                    attr(div18, "class", "service-item");
+                    attr(div14, "class", "services-grid");
+                    attr(div13, "class", "container");
+                    attr(section2, "class", "services");
+                    attr(a9, "href", "#services");
+                    attr(a9, "class", "btn-primary");
+                    attr(div21, "class", "about-text");
+                    attr(div22, "class", "about-image");
+                    attr(div20, "class", "about-content");
+                    attr(div19, "class", "container");
+                    attr(section3, "class", "about");
+                    attr(h23, "class", "section-title");
+                    attr(label0, "for", "name");
+                    attr(input0, "type", "text");
+                    attr(input0, "id", "name");
+                    attr(input0, "name", "name");
+                    attr(input0, "required", "");
+                    attr(div24, "class", "form-group");
+                    attr(label1, "for", "email");
+                    attr(input1, "type", "email");
+                    attr(input1, "id", "email");
+                    attr(input1, "name", "email");
+                    attr(input1, "required", "");
+                    attr(div25, "class", "form-group");
+                    attr(label2, "for", "message");
+                    attr(textarea, "id", "message");
+                    attr(textarea, "name", "message");
+                    attr(textarea, "required", "");
+                    attr(div26, "class", "form-group");
+                    attr(button, "type", "submit");
+                    attr(button, "class", "submit-btn");
+                    attr(form, "class", "contact-form");
+                    attr(div23, "class", "container");
+                    attr(section4, "class", "contact");
+                    attr(a10, "href", "#");
+                    attr(a11, "href", "#");
+                    attr(a12, "href", "#");
+                    attr(div29, "class", "footer-section");
+                    attr(a13, "href", "#");
+                    attr(a14, "href", "#");
+                    attr(a15, "href", "#");
+                    attr(div30, "class", "footer-section");
+                    attr(a16, "href", "#");
+                    attr(a17, "href", "#");
+                    attr(a18, "href", "#");
+                    attr(div31, "class", "footer-section");
+                    attr(div28, "class", "footer-content");
+                    attr(div32, "class", "footer-bottom");
+                    attr(div27, "class", "container");
+                    attr(footer, "class", "footer");
+                },
+                m(target, anchor) {
+                    insert(target, div, anchor);
+                    insert(div, header, null);
+                    insert(header, nav, null);
+                    insert(nav, div0, null);
+                    insert(div0, div1, null);
+                    insert(div1, a0, null);
+                    insert(div1, t1);
+                    insert(div1, ul, null);
+                    insert(ul, li0, null);
+                    insert(li0, a1, null);
+                    insert(ul, t3);
+                    insert(ul, li1, null);
+                    insert(li1, a2, null);
+                    insert(ul, t5);
+                    insert(ul, li2, null);
+                    insert(li2, a3, null);
+                    insert(ul, t7);
+                    insert(ul, li3, null);
+                    insert(li3, a4, null);
+                    insert(ul, t9);
+                    insert(ul, li4, null);
+                    insert(li4, a5, null);
+                    insert(div1, t11);
+                    insert(div1, div2, null);
+                    insert(div2, a6, null);
+                    insert(div, t13);
+                    insert(div, section0, null);
+                    insert(section0, div3, null);
+                    insert(div3, h1, null);
+                    insert(div3, t15);
+                    insert(div3, p0, null);
+                    insert(div3, t17);
+                    insert(div3, div4, null);
+                    insert(div4, a7, null);
+                    insert(div4, t19);
+                    insert(div4, a8, null);
+                    insert(div, t21);
+                    insert(div, section1, null);
+                    insert(section1, div5, null);
+                    insert(div5, h20, null);
+                    insert(div5, t23);
+                    insert(div5, div6, null);
+                    insert(div6, div7, null);
+                    insert(div7, div8, null);
+                    insert(div8, t24);
+                    insert(div7, t25);
+                    insert(div7, h30, null);
+                    insert(div7, t26);
+                    insert(div7, p1, null);
+                    insert(div6, t28);
+                    insert(div6, div9, null);
+                    insert(div9, div10, null);
+                    insert(div10, t29);
+                    insert(div9, t30);
+                    insert(div9, h31, null);
+                    insert(div9, t31);
+                    insert(div9, p2, null);
+                    insert(div6, t33);
+                    insert(div6, div11, null);
+                    insert(div11, div12, null);
+                    insert(div12, t34);
+                    insert(div11, t35);
+                    insert(div11, h32, null);
+                    insert(div11, t36);
+                    insert(div11, p3, null);
+                    insert(div, t38);
+                    insert(div, section2, null);
+                    insert(section2, div13, null);
+                    insert(div13, h21, null);
+                    insert(div13, t40);
+                    insert(div13, div14, null);
+                    insert(div14, div15, null);
+                    insert(div15, h40, null);
+                    insert(div15, t42);
+                    insert(div15, p4, null);
+                    insert(div14, t44);
+                    insert(div14, div16, null);
+                    insert(div16, h41, null);
+                    insert(div16, t46);
+                    insert(div16, p5, null);
+                    insert(div14, t48);
+                    insert(div14, div17, null);
+                    insert(div17, h42, null);
+                    insert(div17, t50);
+                    insert(div17, p6, null);
+                    insert(div14, t52);
+                    insert(div14, div18, null);
+                    insert(div18, h43, null);
+                    insert(div18, t54);
+                    insert(div18, p7, null);
+                    insert(div, t56);
+                    insert(div, section3, null);
+                    insert(section3, div19, null);
+                    insert(div19, div20, null);
+                    insert(div20, div21, null);
+                    insert(div21, h22, null);
+                    insert(div21, t58);
+                    insert(div21, p8, null);
+                    insert(div21, t60);
+                    insert(div21, p9, null);
+                    insert(div21, t62);
+                    insert(div21, a9, null);
+                    insert(div20, t64);
+                    insert(div20, div22, null);
+                    insert(div, t66);
+                    insert(div, section4, null);
+                    insert(section4, div23, null);
+                    insert(div23, h23, null);
+                    insert(div23, t68);
+                    insert(div23, form, null);
+                    insert(form, div24, null);
+                    insert(div24, label0, null);
+                    insert(div24, t70);
+                    insert(div24, input0, null);
+                    insert(form, t71);
+                    insert(form, div25, null);
+                    insert(div25, label1, null);
+                    insert(div25, t73);
+                    insert(div25, input1, null);
+                    insert(form, t74);
+                    insert(form, div26, null);
+                    insert(div26, label2, null);
+                    insert(div26, t76);
+                    insert(div26, textarea, null);
+                    insert(form, t77);
+                    insert(form, button, null);
+                    insert(div, t79);
+                    insert(div, footer, null);
+                    insert(footer, div27, null);
+                    insert(div27, div28, null);
+                    insert(div28, div29, null);
+                    insert(div29, h44, null);
+                    insert(div29, t81);
+                    insert(div29, ul0, null);
+                    insert(ul0, li5, null);
+                    insert(li5, a10, null);
+                    insert(ul0, t83);
+                    insert(ul0, li6, null);
+                    insert(li6, a11, null);
+                    insert(ul0, t85);
+                    insert(ul0, li7, null);
+                    insert(li7, a12, null);
+                    insert(div28, t87);
+                    insert(div28, div30, null);
+                    insert(div30, h45, null);
+                    insert(div30, t89);
+                    insert(div30, ul1, null);
+                    insert(ul1, li8, null);
+                    insert(li8, a13, null);
+                    insert(ul1, t91);
+                    insert(ul1, li9, null);
+                    insert(li9, a14, null);
+                    insert(ul1, t93);
+                    insert(ul1, li10, null);
+                    insert(li10, a15, null);
+                    insert(div28, t95);
+                    insert(div28, div31, null);
+                    insert(div31, h46, null);
+                    insert(div31, t97);
+                    insert(div31, ul2, null);
+                    insert(ul2, li11, null);
+                    insert(li11, a16, null);
+                    insert(ul2, t99);
+                    insert(ul2, li12, null);
+                    insert(li12, a17, null);
+                    insert(ul2, t101);
+                    insert(ul2, li13, null);
+                    insert(li13, a18, null);
+                    insert(div27, t103);
+                    insert(div27, div32, null);
+                    insert(div32, p10, null);
+                },
+                p: noop,
+                i: noop,
+                o: noop,
+                d(detaching) {
+                    if (detaching) detach(div);
+                }
+            };
+        }
+
+        class App extends SvelteComponent {
+            constructor(options) {
+                super();
+                this.$$set = () => {};
+                this.$$.fragment = create_fragment(this);
+                this.$$.on_mount.push(() => {
+                    // Add smooth scrolling
+                    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                        anchor.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            const target = document.querySelector(this.getAttribute('href'));
+                            if (target) {
+                                target.scrollIntoView({
+                                    behavior: 'smooth'
+                                });
+                            }
+                        });
+                    });
+
+                    // Add form submission handler
+                    const form = document.querySelector('.contact-form');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            alert('Thank you for your message! We will get back to you soon.');
+                            form.reset();
+                        });
+                    }
+                });
+                mount_component(this, options.target, options.anchor);
+            }
+        }
+
+        new App({
+            target: document.getElementById('app')
+        });
+    </script>
+</body>
+</html>
